@@ -50,52 +50,6 @@ ngx_http_coraza_process_intervention(coraza_transaction_t *transaction, ngx_http
 		return NGX_OK;
 	}
 
-	log = intervention->log;
-	if (intervention->log == NULL)
-	{
-		log = "(no log message was specified)";
-	}
-
-	ngx_log_error(NGX_LOG_ERR, (ngx_log_t *)r->connection->log, 0, "%s", log);
-
-	if (intervention->log != NULL)
-	{
-		free(intervention->log);
-	}
-
-	if (intervention->url != NULL)
-	{
-		dd("intervention -- redirecting to: %s with status code: %d", intervention.url, intervention.status);
-
-		if (r->header_sent)
-		{
-			dd("Headers are already sent. Cannot perform the redirection at this point.");
-			return NGX_ERROR;
-		}
-
-		/**
-		 * Not sure if it sane to do this indepent of the phase
-		 * but, here we go...
-		 *
-		 * This code cames from: http/ngx_http_special_response.c
-		 * function: ngx_http_send_error_page
-		 * src/http/ngx_http_core_module.c
-		 * From src/http/ngx_http_core_module.c (line 1910) i learnt
-		 * that location->hash should be set to 1.
-		 *
-		 */
-		ngx_http_clear_location(r);
-		ngx_str_t a = ngx_string(intervention->url);
-
-		location = ngx_list_push(&r->headers_out.headers);
-		ngx_str_set(&location->key, "Location");
-		location->value = a;
-		r->headers_out.location = location;
-		r->headers_out.location->hash = 1;
-
-		return intervention->status;
-	}
-
 	if (intervention->status != 200)
 	{
 		/**
@@ -162,11 +116,11 @@ ngx_http_coraza_create_ctx(ngx_http_request_t *r)
 		{
 			return NGX_CONF_ERROR;
 		}
-		ctx->coraza_transaction = coraza_new_transaction_with_id(mmcf->waf, (char *)s.data);
+		ctx->coraza_transaction = coraza_new_transaction_with_id(mmcf->waf, (char *)s.data, NULL);
 	}
 	else
 	{
-		ctx->coraza_transaction = coraza_new_transaction(mmcf->waf);
+		ctx->coraza_transaction = coraza_new_transaction(mmcf->waf, NULL);
 	}
 
 	dd("transaction created");
